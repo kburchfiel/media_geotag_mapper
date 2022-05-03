@@ -6,7 +6,8 @@ By Kenneth Burchfiel
 Released under the MIT license
 
 ![](https://raw.githubusercontent.com/kburchfiel/media_geotag_mapper/master/sample_output.gif)
-The video on which this GIF was based can be found within the project directory as [sample_output.mp4](https://github.com/kburchfiel/media_geotag_mapper/blob/master/sample_output.mp4).
+
+(The video on which this GIF was based can be found within the project directory as [sample_output.mp4](https://github.com/kburchfiel/media_geotag_mapper/blob/master/sample_output.mp4).)
 
 ### Introduction
 Media GeoTag Mapper allows you to extract geotag data (e.g. geographical coordinates) from image and video files on your computer, then create maps based on that data. In doing so, it lets you see all the places you've traveled--provided that you took a geotagged image or video clip there.
