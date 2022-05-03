@@ -6,6 +6,9 @@
 
 # Released under the MIT License
 
+# GitHub link:
+# https://github.com/kburchfiel/media_geotag_mapper
+
 # To see many of these functions in action, look through
 # the media_geotag_mapper_tutorial Jupyter Notebook. 
 
