@@ -5,6 +5,8 @@ By Kenneth Burchfiel
 
 Released under the MIT license
 
+GitHub link: https://github.com/kburchfiel/media_geotag_mapper
+
 ![](https://raw.githubusercontent.com/kburchfiel/media_geotag_mapper/master/sample_output.gif)
 
 (The video on which this GIF was based can be found within the project directory as [sample_output.mp4](https://github.com/kburchfiel/media_geotag_mapper/blob/master/sample_output.mp4).)
