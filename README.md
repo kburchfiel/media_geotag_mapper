@@ -5,7 +5,6 @@ By Kenneth Burchfiel
 
 Released under the MIT license
 
-[More documentation to come!]
 
 ### Introduction
 Media GeoTag Mapper allows you to extract geotag data (e.g. geographical coordinates) from image and video files on your computer, then create maps based on that data. In doing so, it lets you see all the places you've traveled--provided that you took a geotagged image or video clip there.
@@ -48,3 +47,4 @@ Two interactive HTML maps created within media_geotag_mapper_tutorial can be fou
 
 Meanwhile, the **map_screenshots** folder contains screenshots of many more maps generated within the media_geotag_mapper_tutorial file, and the **smaller_screenshots** folder contains .jpg versions of these screenshots with a lower file size.
 
+**df_media_israel.csv** and **df_locations_israel.csv** show samples of the media and locations DataFrames created within the media_geotag_mapper_tutorial file. 
