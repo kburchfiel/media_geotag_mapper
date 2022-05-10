@@ -7,6 +7,9 @@ Released under the MIT license
 
 GitHub link: https://github.com/kburchfiel/media_geotag_mapper
 
+Related blog post (with commentary on some of the maps created within the tutorial notebook):
+https://kburchfiel3.wordpress.com/2022/05/10/using-media-geotag-mapper-mgtm-to-visualize-my-travels-over-the-past-10-years/
+
 ![](https://raw.githubusercontent.com/kburchfiel/media_geotag_mapper/master/sample_output.gif)
 
 (The video on which this GIF was based can be found within the project directory as [sample_output.mp4](https://github.com/kburchfiel/media_geotag_mapper/blob/master/sample_output.mp4).)
