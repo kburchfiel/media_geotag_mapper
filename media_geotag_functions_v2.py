@@ -124,10 +124,13 @@ def retrieve_pic_locations(df_pics):
     data from a list of pictures. It assumes that the column names
     are the same as those created within generate_media_list.
 
-    This function has been tested out with Samsung Galaxy images, but it 
-    may not work with other devices (e.g. iPhones), in which case I plan
-    to either update this function or create a new function for one 
-    or more other devices.
+    I have tested out this function with image files from both Samsung
+    and Apple phones, but some tweaking may be needed in order to get it 
+    to work on other devices. If you have an iPhone, 
+    consider sorting the output of this function by 
+    the 'alt_capture_time' column, which may lead to more accurate paths
+    than the 'modified_date' column (which worked well with the Samsung
+    media on which I originally tested the function).
     '''
     photo_location_lat_list = []
     photo_location_lon_list = []
@@ -136,6 +139,9 @@ def retrieve_pic_locations(df_pics):
     for i in tqdm(range(len(df_pics))):
         # tqdm creates a handy progress bar for for loops. See
         # https://tqdm.github.io/
+        # There are two try/except statements nested within another 
+        # try/except statement below. This method allows the function
+        # to only try to generate current_image once, thus saving time.
         try:
             with open(df_pics.iloc[i,path_column], 'rb') as image_file:
                 current_image = Image(image_file)
@@ -178,7 +184,13 @@ def retrieve_pic_locations(df_pics):
                 photo_location_lat_list.append(0)
                 photo_location_lon_list.append(0)
 
-
+            # The following try/except statement searches for a 'datetime'
+            # value within the EXIF data. On the iPhone media on which
+            # I tested this function, this datetime value had colons separating
+            # the year, month, and date. Therefore, in order to get Pandas to 
+            # convert into a Pandas DateTime value, I first needed to
+            # relpace the first two colons in the datetime value
+            # with hyphens (hence the replace() call below).
             try:
                 alt_capture_time_list.append(pd.to_datetime(
                 current_image.datetime.replace(':','-', 2)))
@@ -206,15 +218,23 @@ def retrieve_clip_locations(df_clips):
     ''' This function retrieves the geotag (geographic coordinate)
     data from a list of images. It assumes that the column names
     are the same as those created within generate_media_list.
-    This function has been tested out with Samsung Galaxy videos, but it 
-    may not work with other devices (e.g. iPhones), in which case I plan
-    to either update this function or create a new function for one 
-    or more other devices.
+    I have tested out this function with video files from both Samsung
+    and Apple phones, but some tweaking may be needed in order to get it 
+    to work on other devices. If you have an iPhone, 
+    consider sorting the output of this function by 
+    the 'alt_capture_time' column, which may lead to more accurate paths
+    than the 'modified_date' column (which worked well with the Samsung
+    media on which I originally tested the function).
+
     '''
     video_location_list = []
     alt_capture_time_list = []
     path_column = df_clips.columns.get_loc('path')
     for i in tqdm(range(len(df_clips))):
+
+        # There are two try/except statements nested within another 
+        # try/except statement below. This method allows the function
+        # to only try to generate current_image once, thus saving time.
         try:
             metadata = ffmpeg.probe(df_clips.iloc[i, path_column])
             # Based on https://kkroening.github.io/ffmpeg-python/#ffmpeg.probe
@@ -223,6 +243,11 @@ def retrieve_clip_locations(df_clips):
             # the dictionary in order to retrieve the video location. 
 
             try:
+                # I found iPhone video geotag data to be stored within
+                # a 'com.apple.quicktime.location.ISO6709' key, whereas
+                # Samsung video location data was stored within a 'location'
+                # key, hence this if/else statement. Other devices may use
+                # other keys.
                 if 'location' in metadata['format']['tags'].keys():
                     video_location_list.append(
                         metadata['format']['tags']['location'])
@@ -243,12 +268,18 @@ def retrieve_clip_locations(df_clips):
             except:
                 video_location_list.append('xxxxxxxxxxxxxxxxx')
 
+
+            # The following try/except statement searches for a 
+            # 'com.apple.quicktime.creationdate' value within the video
+            # metadata. I imagine this value will only be present within 
+            # Apple devices.
+ 
             try:
                 if 'com.apple.quicktime.creationdate' in metadata[
                     'format']['tags'].keys():
                     alt_capture_time_list.append(
-                        pd.to_datetime(
-                            metadata['format']['tags']['com.apple.quicktime.creationdate']))
+                    pd.to_datetime(metadata[
+                        'format']['tags']['com.apple.quicktime.creationdate']))
                 else:
                     alt_capture_time_list.append('x')
             except:
@@ -341,8 +372,11 @@ path_color = '#3388ff', path_weight = 3, tiles = 'Stamen Terrain'):
     the value, the more zoomed in the map will be.
 
     timestamp_column: The column within the DataFrame that contains the time
-    that each image/video was created. Interestingly, I found this to be
-    the modified_time column for my tests, so I've set it as the default here.
+    that each image/video was created. I found that, for Samsung media,
+    the 'modified_date' column created in the generate_media_list function
+    best represented this time, whereas for iPhone media, the
+    'alt_capture_time' column created within the generate_loc_list function
+    worked better.
 
     longitude_cutoff: Longitude points above this value will be reduced by 
     360. This cutoff prevents the map from drawing incorrect paths between
@@ -628,7 +662,8 @@ screenshot_save_path = None):
     for root, dirs, files in os.walk(absolute_path_to_map_folder):
         maps_list = files
     for map in maps_list:
-        create_map_screenshot(absolute_path_to_map_folder, map_name = map, screenshot_save_path = screenshot_save_path)
+        create_map_screenshot(absolute_path_to_map_folder, 
+        map_name = map, screenshot_save_path = screenshot_save_path)
 
 def convert_png_to_smaller_jpg(png_folder, png_image_name, jpg_folder, 
 reduction_factor = 1, quality_factor = 50):
