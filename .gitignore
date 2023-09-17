@@ -17,6 +17,10 @@ maps/2020_combined_locations.html
 maps/2021_combined_locations.html
 maps/2022_combined_intl_locations.html
 maps/2022_combined_locations.html
+maps/2023_combined_intl_locations.html
+maps/2023_combined_locations.html
+maps/2024_combined_intl_locations.html
+maps/2024_combined_locations.html
 maps/combined_locations.html
 maps/combined_routes_intl_locations.html
 maps/combined_routes_locations.html
@@ -26,3 +30,7 @@ iPhone_media_geotag_mapper_tutorial.ipynb
 media_geotag_functions_old_version.py
 media_geotag_mapper_tutorial_v9.ipynb
 media_geotag_mapper_tutorial_v9_old.ipynb
+extra_files/spain_trip_media_list.csv
+extra_files/spain_trip_media_locations.csv
+extra_map_screenshots/spain_trip_locations.png
+extra_maps/spain_trip_locations.html
