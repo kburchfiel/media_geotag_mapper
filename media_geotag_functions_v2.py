@@ -340,7 +340,7 @@ def map_media_locations(df_locations, file_name, folder_path = None,
 add_paths = False, starting_location = [39, -95], zoom_start = 4, 
 timestamp_column = 'modified_time', longitude_cutoff = 80, 
 marker_type = 'CircleMarker', circle_marker_color = '#ff0000', radius = 5, 
-path_color = '#3388ff', path_weight = 3, tiles = 'Stamen Terrain'):
+path_color = '#3388ff', path_weight = 3, tiles = 'OpenStreetMap'):
     '''map_media_locations converts lists of files and geographic coordinates
     into maps of those coordinates. It also displays the media creation time
     and geographic coordinates when the user hovers over a map tile. 
@@ -396,14 +396,11 @@ path_color = '#3388ff', path_weight = 3, tiles = 'Stamen Terrain'):
     large datasets.
 
     circle_marker_color: The color that will be assigned to any 
-    CircleMarkers on the map. I find that red stands out well against
-    Stamen Terrain backgrounds. For Stamen Toner backgrounds, you might
-    want to try using green.
+    CircleMarkers on the map. 
 
     radius: The radius of the CircleMarkers.
 
-    tiles: The map tile type to use. I like the look of Stamen Terrain,
-    but Stamen Toner is another good option.
+    tiles: The map tile type to use.
 
     path_color: The color to use when drawing paths in between points.
     The default color comes from:
