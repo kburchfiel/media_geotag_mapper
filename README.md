@@ -49,7 +49,7 @@ And in 2021, most of my travels were focused on the East Coast:
 
 **media_geotag_functions.py** contains the core functions used within Media Geotag Mapper.
 
-**media_geotag_mapper_tutorial_v10** [or a later version] demonstrates how to use the functions in media_geotag_functions.py to retrieve, store, and map geotag data for photos and videos. 
+**media_geotag_mapper_tutorial_v11** [or a later version] demonstrates how to use the functions in media_geotag_functions.py to retrieve, store, and map geotag data for photos and videos. 
 
 If you will be extracting iPhone images, make sure to reference the **media_geotag_mapper_iPhone_example** notebook to see how to use the code in media_geotag_functions.py to successfully map iPhone media data.
 
