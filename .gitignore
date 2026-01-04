@@ -30,5 +30,7 @@ desktop-settings.json
 older_files/
 Allie_Travel_Maps/*
 temp/
-
 df_locations_test.csv
+*combined_routes_locations.png
+*combined_routes_intl_locations.png
+*trip_locations.png
