@@ -10,16 +10,12 @@
 # https://github.com/kburchfiel/media_geotag_mapper
 
 # To see many of these functions in action, look through
-# the media_geotag_mapper_tutorial Jupyter Notebook. 
+# the media_geotag_mapper_tutorial and media_geotag_mapper_iPhone_example Jupyter Notebooks. 
 
-from exif import Image
+import exifread # Installed via 'pip install exifread'. See
+# https://github.com/ianare/exif-py
 from os.path import join
 import time
-# https://exif.readthedocs.io/en/latest/usage.html
-# Important warning from the exif library:
-# "Back up your photos before using this tool! You are responsible for
-# any unexpected data loss that may occur through improper use of this 
-# package."
 from pyproj import Geod
 import numpy as np
 import ffmpeg
@@ -32,10 +28,16 @@ import datetime
 from selenium import webdriver
 import PIL.Image
 
-def generate_media_list(top_folder_list, folder_name):
+def generate_media_list(top_folder_list, folder_name, 
+                        files_to_import = 0):
     '''This function goes through all folders contained
     within top_folder_list, then generates a DataFrame with information 
     on the files that it finds within those folders.
+
+    files_to_import: The number of files from each folder (including
+    subfolders) that you would like to process. Set to 0 to import
+    all files; set to a positive integer to import only that number
+    of files (which can be useful for debugging and testing work).
 
     Note: if you receive an AttributeError message that states: 
     'Can only use .str accessor with string values!', 
@@ -50,7 +52,13 @@ def generate_media_list(top_folder_list, folder_name):
     media_dict_list = []
     for top_folder in top_folder_list:
         for root, dirs, files in os.walk(top_folder): 
-            for file in files: # You can add [0:10] to files to speed
+            if files_to_import > 0:
+                # Limiting the number of files within each subfolder
+                # that the program will read (if requested by 
+                # the caller):
+                files = files[0:int(files_to_import)].copy()
+            for file in files: 
+                # You can add [0:10] to files to speed
                 # up this function while debugging your code
                 # This code is based on:
                 # https://docs.python.org/3/library/os.html
@@ -98,7 +106,7 @@ def generate_media_list(top_folder_list, folder_name):
                 # the following lists to include alternate video and image file types.
             
                 clip_extensions = ['mp4', 'mov', 'mts']
-                pic_extensions = ['jpg', 'tiff', 'png', 'jpeg']
+                pic_extensions = ['jpg', 'tiff', 'png', 'jpeg', 'heic']
                 # The following use of if/else within a lambda function is based on
                 # an example by Professor Hardeep Johar.
 
@@ -177,34 +185,41 @@ def retrieve_pic_locations(df_pics):
         # try/except statement below. This method allows the function
         # to only try to generate current_image once, thus saving time.
         try:
-            with open(path, 'rb') as image_file:
-                current_image = Image(image_file)
-            available_metadata = set(current_image.list_all())
-
-            if set({'gps_latitude', 'gps_latitude_ref',
-                   'gps_longitude', 'gps_longitude_ref'}).issubset(
+            # The following code is based on
+            # https://github.com/ianare/exif-py .
+            with open(path, 'rb') as file_handle:
+                current_image = exifread.process_file(
+                file_handle, extract_thumbnail=False,
+                builtin_types=True, details=False)
+                # Storing all of the keys from the current_image
+                # dictionary as a set:
+                available_metadata = set(current_image)
+                # Here with editing
+            if set({'GPS GPSLatitude', 'GPS GPSLatitudeRef',
+                   'GPS GPSLongitude', 'GPS GPSLongitudeRef'}).issubset(
                 available_metadata):      
                 # Based on https://pypi.org/project/exif/
 
-                lat_tuple = current_image.gps_latitude
-                lat_ref = current_image.gps_latitude_ref
-                # lat_tuple contains 3 numbers representing the 
+                lat_list = current_image['GPS GPSLatitude']
+                lat_ref = current_image['GPS GPSLatitudeRef']
+                # lat_list (which may actually be a list)
+                # contains 3 numbers representing the 
                 # degrees, minutes, and seconds that make up the
                 # latitude coordinate, and lat_ref contains either
-                # 'N' (for North) or 'S' (for South). lon_tuple
+                # 'N' (for North) or 'S' (for South). lon_list
                 # and lon_ref have similar formats. 
 
-                lon_tuple = current_image.gps_longitude
-                lon_ref = current_image.gps_longitude_ref
+                lon_list = current_image['GPS GPSLongitude']
+                lon_ref = current_image['GPS GPSLongitudeRef']
 
                 # The following code converts these degree/minute/second
                 # values into decimal degrees in order to make plotting
                 # them easier.
-                decimal_lat = lat_tuple[0] + lat_tuple[1]/60 + lat_tuple[2]/3600
+                decimal_lat = lat_list[0] + lat_list[1]/60 + lat_list[2]/3600
                 if lat_ref == 'S':
                     decimal_lat *= -1
                 
-                decimal_lon = lon_tuple[0] + lon_tuple[1]/60 + lon_tuple[2]/3600
+                decimal_lon = lon_list[0] + lon_list[1]/60 + lon_list[2]/3600
                 if lon_ref == 'W':
                     decimal_lon *= -1
                 
@@ -234,34 +249,42 @@ def retrieve_pic_locations(df_pics):
             # Checking whether the values we need in order to 
             # produce this calculation are available within
             # our available metadata:
-            if set({'datetime', 'offset_time'}).issubset(
+            if set({'EXIF DateTimeOriginal', 
+                    'EXIF OffsetTimeOriginal'}).issubset(
                 available_metadata):
                 # Based on ChristopheD's response at
                 # https://stackoverflow.com/a/2765967/13097194
                 datetime_with_offset = (
-                current_image.datetime + current_image.offset_time)
-                # Replacing the colons in YYYY:MM:DD with hyphens:
+                current_image['EXIF DateTimeOriginal'] 
+                + current_image['EXIF OffsetTimeOriginal'])
                 utc_metadata_creation_time = pd.to_datetime(
-                datetime_with_offset.replace(':','-', 2), utc = True)
+                datetime_with_offset, utc=True)
                 df_pics.iloc[i, 
                 utc_metadata_creation_time_position] = utc_metadata_creation_time
-            elif set({'gps_timestamp', 'gps_datestamp'}).issubset(
+            elif set({'GPS GPSTimeStamp', 'GPS GPSDate'}).issubset(
                 available_metadata):
             # Retrieving what I believe to be UTC time from
             # the GPS timestamp instead: (This is often available
             # when offset_time is not.)
             # (See https://exiftool.org/geotag.html)
-                h, m, s, = current_image.gps_timestamp
+                h, m, s, = current_image['GPS GPSTimeStamp']
                 # These values showed up as 4.0, 13.0, and 34.0 in
                 # the clip I checked--so some reformatting will
                 # be necessary to convert them into timestamp-compatible
-                # values
+                # values.
                 datetime_from_gps = (
-                    current_image.gps_datestamp.replace(':','-') + " " + ( 
+                    current_image['GPS GPSDate'] + " " + ( 
                 str(int(h)).zfill(2) + ":"+  str(int(m)).zfill(2) + ":"+
                 str(int(s)).zfill(2)))
                 utc_metadata_creation_time = pd.to_datetime(
                     datetime_from_gps, utc = True)
+                # Note that passing utc=True will convert timestamps from
+                # a localized time zone to UTC. For instance,
+                # if the argument to pd.to_datetime() here is 
+                # '2025-09-28 15:02:56-04:00',
+                # the output will be Timestamp('2025-09-28 19:02:56+0000', tz='UTC') .
+                # (Note that the time is advanced four hours and the -4
+                # offset is replaced with +0.)
                 df_pics.iloc[i, 
                 utc_metadata_creation_time_position] = utc_metadata_creation_time
         except:
@@ -283,12 +306,7 @@ def retrieve_clip_locations(df_clips):
     are the same as those created within generate_media_list.
     I have tested out this function with video files from both Samsung
     and Apple phones, but some tweaking may be needed in order to get it 
-    to work on other devices. If you have an iPhone, 
-    consider sorting the output of this function by 
-    the 'alt_capture_time' column, which may lead to more accurate paths
-    than the 'modified_date' column (which worked well with the Samsung
-    media on which I originally tested the function).
-
+    to work on other devices.
     '''
 
     # Setting default values that will then get updated within the 
@@ -307,12 +325,10 @@ def retrieve_clip_locations(df_clips):
     
     
     df_clips['utc_metadata_creation_time'] = utc_epoch_start
-    df_clips['alt_capture_time'] = utc_epoch_start
 
     raw_loc_column_position = df_clips.columns.get_loc('raw_location')
     utc_metadata_creation_time_position = df_clips.columns.get_loc(
         'utc_metadata_creation_time')
-    alt_capture_time_position = df_clips.columns.get_loc('alt_capture_time')
     
     
     for i in tqdm(range(len(df_clips))):
@@ -351,15 +367,10 @@ def retrieve_clip_locations(df_clips):
             # metadata was. Therefore, I'll also store
             # this tag (when it's available).
 
-            # Note: the utc_metadata_creation_time and 
-            # alt_capture_time values I'm retrieving here may be 
-            # equivalent and could thus go in the same column, which would 
-            # allow this section to be simplified considerably.
-            
             if 'creation_time' in metadata[
                     'format']['tags'].keys():
                 utc_metadata_creation_time = pd.to_datetime(metadata[
-                'format']['tags']['creation_time'])
+                'format']['tags']['creation_time'], utc = True)
                 df_clips.iloc[i, 
                 utc_metadata_creation_time_position] = utc_metadata_creation_time
             # Unlike st_mtime, which is 
@@ -373,15 +384,21 @@ def retrieve_clip_locations(df_clips):
             # The following statement searches for a 
             # 'com.apple.quicktime.creationdate' value within the video
             # metadata. I imagine this value will only be present within 
-            # Apple devices.
+            # Apple devices. (A newer iPhone model that my wife has
+            # did contain a 'creation_time' tag, so this item may only
+            # be necessary for older phones.)
             
-
-            if 'com.apple.quicktime.creationdate' in metadata[
+            elif 'com.apple.quicktime.creationdate' in metadata[
                 'format']['tags'].keys():
-                alt_capture_time = pd.to_datetime(metadata[
-                    'format']['tags']['com.apple.quicktime.creationdate'])
+                utc_metadata_creation_time = pd.to_datetime(metadata[
+                    'format']['tags']['com.apple.quicktime.creationdate'],
+                    utc=True) # The 'creationdate' tag that I checked
+                # when writing this code showed a full time-zone-aware
+                # datetime and not just the date--so it *should* be
+                # equivalent to a regular 'creation_time' value, though
+                # the offset may be local rather than UTC-based.
                 df_clips.iloc[i, 
-                alt_capture_time_position] = alt_capture_time
+                utc_metadata_creation_time_position] = utc_metadata_creation_time
         except:
             pass
     
@@ -406,10 +423,6 @@ def retrieve_clip_locations(df_clips):
 
     df_clips['utc_metadata_creation_time'] = df_clips[
     'utc_metadata_creation_time'].replace(
-    utc_epoch_start, pd.NaT)
-
-    df_clips['alt_capture_time'] = df_clips[
-    'alt_capture_time'].replace(
     utc_epoch_start, pd.NaT)
     
     return df_clips
@@ -460,8 +473,7 @@ path_color = '#3388ff', path_weight = 3, tiles = 'OpenStreetMap'):
     file_name: The name that should be used when saving the final map.
     The function adds '_locations' to this map name.
 
-    folder_path: The path into which the map file should be saved. If 
-    kept as 'None,' the map will be saved within the project's root folder.
+    folder_path: The path into which the map file should be saved.
 
     add_paths: If set to True, map_media_locations will add paths in between
     each point on the map. For this to work correctly, it's important that 
