@@ -5,6 +5,8 @@ By Kenneth Burchfiel
 
 Released under the MIT license
 
+Initially released in 2022; updated extensively in 2026
+
 GitHub link: https://github.com/kburchfiel/media_geotag_mapper
 
 Related blog post (with commentary on some of the maps created within the tutorial notebook):
@@ -47,14 +49,12 @@ And in 2021, most of my travels were focused on the East Coast:
 
 ### Project files
 
-**media_geotag_functions.py** contains the core functions used within Media Geotag Mapper.
+**media_geotag_functions_v6.py** (or a later version) contains the core functions used within Media Geotag Mapper.
 
-**media_geotag_mapper_tutorial_v11** [or a later version] demonstrates how to use the functions in media_geotag_functions.py to retrieve, store, and map geotag data for photos and videos. 
-
-If you will be extracting iPhone images, make sure to reference the **media_geotag_mapper_iPhone_example** notebook to see how to use the code in media_geotag_functions.py to successfully map iPhone media data.
+**media_geotag_mapper_tutorial_v14** (or a later version) demonstrates how to use the functions in media_geotag_functions.py to retrieve, store, and map geotag data for photos and videos. 
 
 Two interactive HTML maps created within the media_geotag_mapper_tutorial notebook can be found within the **maps** folder. These maps are interactive, so by downloading them, you can retrieve more information about each marker by hovering over them and by clicking them. You can also pan and zoom each map.
 
-Meanwhile, the **map_screenshots** folder contains screenshots of many more maps generated within the media_geotag_mapper_tutorial notebook, and the **smaller_screenshots** folder contains .jpg versions of these screenshots with a lower file size.
+Meanwhile, the **map_screenshots** folder contains screenshots of many more maps generated within the media_geotag_mapper_tutorial notebook (though I excluded these from the Git repository), and the **smaller_screenshots** folder contains .jpg versions of these screenshots with a lower file size.
 
 **df_media_israel.csv** and **df_locations_israel.csv** show samples of the media and locations DataFrames created within the media_geotag_mapper_tutorial notebook. 

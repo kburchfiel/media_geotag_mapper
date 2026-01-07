@@ -125,7 +125,8 @@ def generate_media_list(top_folder_list, folder_name,
                     'type':file_type})
 
     df_media = pd.DataFrame(media_dict_list)
-
+    # Removing any duplicate full file paths from this list:
+    df_media.drop_duplicates(subset='path', inplace = True)
         
     # https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.apply.html
     df_media.to_csv(f'{folder_name}_media_list.csv', index = False)
