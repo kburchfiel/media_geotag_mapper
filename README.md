@@ -21,7 +21,7 @@ Media GeoTag Mapper allows you to extract geotag data (e.g. geographical coordin
 
 The maps created by Media GeoTag mapper are in HTML form and interactive in nature. You can pan and zoom them to get a closer look, and by hovering over markers, you can see the geographic coordinates and image creation times for each marker. In addition, clicking on a marker reveals the path to the original file. In addition, the project contains code for converting these HTML maps to both high-quality .png files and lower-sized .jpg files (some of which are shown below). 
 
-So far, I've tested out this code on Samsung, Sony, and Apple devices using a Windows computer. The code that extracts geotag data from images and videos may need to be tweaked in order to work with other devices.
+So far, I've tested out this code on Samsung, Sony, and Apple devices using a Linux computer (although the code was originally created for a Windows laptop). The code that extracts geotag data from images and videos may need to be tweaked in order to work with other devices.
 
 ### Examples
 
@@ -35,6 +35,12 @@ Global view:
 
 If you don't want to see the paths in between geotags, you can also create maps of just the geotag locations:
 ![](https://raw.githubusercontent.com/kburchfiel/media_geotag_mapper/master/smaller_screenshots/combined_locations.jpg)
+
+These are all static JPG files; however, Media Geotag Mapper also creates interactive copies of maps (of which these files are actually just Selenium-generated screenshots). Although I excluded most HTML-based maps from the repository for privacy reasons, you can find interactive examples of maps from two trips via the following links:
+
+[Trip to Israel in March 2022](https://kburchfiel.github.io/media_geotag_mapper/2022_03_Israel_trip_locations.html)
+
+[Trip to Miami in April 2022](https://kburchfiel.github.io/media_geotag_mapper/2022_04_Miami_trip_locations.html)
 
 
 It's also interesting to generate maps for each year. For instance, in 2013, you can see that I spent lots of time in Vermont and Virginia:
