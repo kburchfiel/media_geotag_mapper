@@ -58,3 +58,7 @@ Two interactive HTML maps created within the media_geotag_mapper_tutorial notebo
 Meanwhile, the **map_screenshots** folder contains screenshots of many more maps generated within the media_geotag_mapper_tutorial notebook (though I excluded these from the Git repository), and the **smaller_screenshots** folder contains .jpg versions of these screenshots with a lower file size.
 
 **df_media_israel.csv** and **df_locations_israel.csv** show samples of the media and locations DataFrames created within the media_geotag_mapper_tutorial notebook. 
+
+### Special thanks
+
+I am grateful to the developers of the [exif-py](https://github.com/ianare/exif-py) and [ffmpeg-python](https://github.com/kkroening/ffmpeg-python) libraries, which this script relies on heavily in order to process image and video metadata. These are just two of the many libraries (Folium, Selenium, etc.) that this script utilizes.

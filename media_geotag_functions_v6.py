@@ -18,7 +18,8 @@ from os.path import join
 import time
 from pyproj import Geod
 import numpy as np
-import ffmpeg
+import ffmpeg # Installed via 'pip install python-ffmpeg'. See
+# https://github.com/kkroening/ffmpeg-python 
 from tqdm import tqdm
 import os
 import pandas as pd
