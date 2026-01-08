@@ -16,6 +16,8 @@ import exifread # Installed via 'pip install exifread'. See
 # https://github.com/ianare/exif-py
 from os.path import join
 import time
+from branca.colormap import LinearColormap # See
+# https://python-visualization.github.io/branca/colormap.html#branca.colormap.LinearColormap
 from pyproj import Geod
 import numpy as np
 import ffmpeg # Installed via 'pip install python-ffmpeg'. See
@@ -457,9 +459,11 @@ def generate_loc_list(df_media, folder_name):
 
 def map_media_locations(df_locations, file_name, folder_path = None, 
 add_paths = False, starting_location = [39, -95], zoom_start = 4, 
-timestamp_column = 'utc_metadata_creation_time', longitude_cutoff = 80, 
+timestamp_column_name = 'utc_metadata_creation_time', longitude_cutoff = 80, 
 marker_type = 'CircleMarker', circle_marker_color = '#ff0000', radius = 5, 
-path_color = '#3388ff', path_weight = 3, tiles = 'OpenStreetMap'):
+path_color = '#3388ff', path_weight = 3, tiles = 'OpenStreetMap',
+color_points_by = 'year_20xx', colormap_color_range = ['red', 'blue'],
+show_colormap = True):
     '''map_media_locations converts lists of files and geographic coordinates
     into maps of those coordinates. It also displays the media creation time
     and geographic coordinates when the user hovers over a map tile. 
@@ -490,7 +494,12 @@ path_color = '#3388ff', path_weight = 3, tiles = 'OpenStreetMap'):
     the value, the more zoomed in the map will be.
 
     timestamp_column: The column within the DataFrame that contains the time
-    that each image/video was created. 
+    that each image/video was created. The DataFrame will be sorted by
+    this column, and this resulting sort order will be used to create
+    the file numbers in the tooltips. (WARNING: these file numbers
+    will not be accurate for files without a valid timestamp_column
+    value. Consider excluding such files from the DataFrame that you're
+    passing to this function.
 
     longitude_cutoff: Longitude points above this value will be reduced by 
     360. This cutoff prevents the map from drawing incorrect paths between
@@ -510,7 +519,8 @@ path_color = '#3388ff', path_weight = 3, tiles = 'OpenStreetMap'):
     large datasets.
 
     circle_marker_color: The color that will be assigned to any 
-    CircleMarkers on the map. 
+    CircleMarkers on the map. This will *only* get applied if
+    color_points_by (see below) is set to 'same'.
 
     radius: The radius of the CircleMarkers.
 
@@ -522,24 +532,89 @@ path_color = '#3388ff', path_weight = 3, tiles = 'OpenStreetMap'):
 
     path_weight: The weight (thickness) of the paths.
 
+    color_points_by: The unit of time/order by which to color points. Can be
+    'year'; 'year_20xx' (which shows the current year minus 2000, 
+    thus getting around a comma issue);
+    'month' (particularly useful for maps of routes for a given
+    year); 'order'; or 'same'. (If 'same' is chosen, all points
+    will have the color specified by circle_marker_color; if 'order' is 
+    chosen, points will be colored by the order in which they appear.)
+
+        Note: A benefit of using 'year' or 'month' instead of 'order' is 
+        that the former two options weight each year/month equally,
+        regardless of how many images or pictures you happen to have
+        from that month.
+
+    colormap_color_range: A list of colors to be passed to a LinearColorMap within
+    branca. (See https://python-visualization.github.io/branca/
+    colormap.html#branca.colormap.LinearColormap
+    for more details.) You can use a list of color names 
+    (e.g. ['red', 'blue'] or RGBA tuples (e.g. 
+    [(255, 0, 0, 0), (0, 0, 0, 255)] for this parameter; other options,
+    as specified in the Branca documentation, are also accepted.   
+
+    show_colormap: Set to True to show a colormap; set to False to hide it.
+    This value will get reset to False if color_points by is set to 'same.'
+
 
     '''
     m = folium.Map(location = starting_location, zoom_start = zoom_start, 
     tiles = tiles)
-    locations_to_map = df_locations.query("lat != 0 & lon != 0").copy()
-    # The above line removes any 'Null Island' geotags from the map.
+    locations_to_map = df_locations.query("lat != 0 & lon != 0").sort_values(
+    timestamp_column_name).reset_index(drop=True).copy()
+    # The above line removes any 'Null Island' geotags from the map and 
+    # also makes sure that they are in chronological order (at least 
+    # for items with a valid timestamp_column_name value)
 
+    # The following fields will be useful for a tooltip item and
+    # (when color_points_by is set to 'order') the map's legend.
+    locations_to_map['sort_order'] = locations_to_map.index + 1
+    location_count = len(locations_to_map)
+    
     lat_column = locations_to_map.columns.get_loc('lat')
     lon_column = locations_to_map.columns.get_loc('lon')
-    timestamp_column = locations_to_map.columns.get_loc(timestamp_column)
+    timestamp_column = locations_to_map.columns.get_loc(timestamp_column_name)
     file_path_column = locations_to_map.columns.get_loc('path')
     stroke_opacity = radius/5 # If CircleMarkers will be used to show the
     # geotags, then the stroke value will be one fifth of the radius value.
     name_column = locations_to_map.columns.get_loc('name')
-
     marker_count = 0
 
-
+    # Creating a colormap that can be used to assign specific colors to each
+    # point:
+    
+    if color_points_by != 'same':
+        color_col = timestamp_column_name + color_points_by
+        if color_points_by == 'year':
+            locations_to_map[color_col] = locations_to_map[
+            timestamp_column_name].dt.year
+        # I added in the following item because, by default,
+        # Folium (or branca?) adds in comma separators within years.
+        # Since these look unsightly, a workaround is simply to
+        # subtract 2,000 from each year so that no commas appear.
+        # This code will work great until year 3,000! :)
+        if color_points_by == 'year_20xx':
+            locations_to_map[color_col] = locations_to_map[
+            timestamp_column_name].dt.year - 2000
+        if color_points_by == 'month':
+            locations_to_map[color_col] = locations_to_map[
+            timestamp_column_name].dt.month
+        if color_points_by == 'order':
+            # overwriting color_col with sort_order, which will work
+            # great for this condition.
+            color_col = 'sort_order'
+            # Since this column is already filled with the values we 
+            # need, we don't need to take any further steps here.
+    
+        colormap = LinearColormap(colors = colormap_color_range,
+        vmin = locations_to_map[color_col].min(), vmax = locations_to_map[
+        color_col].max(), caption = color_points_by.capitalize().replace(
+        '_20xx', ' (20xx)')).to_step(12) # 12 is
+        # a nice default setting here, since it will line up nicely with
+        # the 12 months in the year when color_points_by is set to 'month'.
+        # Splitting color_points_by and keeping only the first element
+        # allows 'year_20xx' to get translated into 'Year'.
+    
     if add_paths == True:
         g = Geod(ellps="WGS84")
         # From https://pyproj4.github.io/pyproj/stable/api/geod.html
@@ -623,7 +698,9 @@ path_color = '#3388ff', path_weight = 3, tiles = 'OpenStreetMap'):
             weight = path_weight).add_to(m) 
 
     # Now that all paths (if requested) have been added to the map, the code
-    # will now add points 
+    # will now add points.
+
+    
 
     for i in range(len(locations_to_map)):
         lat = locations_to_map.iloc[i, lat_column]
@@ -633,7 +710,10 @@ path_color = '#3388ff', path_weight = 3, tiles = 'OpenStreetMap'):
         else:
             mapped_lon = lon
         timestamp = locations_to_map.iloc[i, timestamp_column]
-        tooltip = str(timestamp) + ': ' + str(lat)+', '+str(lon)
+        tooltip = (str(timestamp) + ':<br>' 
+                   + str(lat.round(3))+', '+str(lon.round(3))
+                  + ' (File ' + str(locations_to_map.iloc[i]['sort_order']) 
+                   + ' of ' + str(location_count) + ')')
         file_path = locations_to_map.iloc[i, file_path_column]
         # I found that popup values with backslashes would prevent the maps
         # from displaying correctly, perhaps because it modifies the 
@@ -652,7 +732,12 @@ path_color = '#3388ff', path_weight = 3, tiles = 'OpenStreetMap'):
                 radius = radius,
                 weight = 0.5,
                 opacity = stroke_opacity,
-                fill_color = circle_marker_color,
+                # Choosing either a colormap-based color or
+                # a fixed one for our fill_color value:
+                fill_color = [
+                colormap(locations_to_map.iloc[i][color_col]) if
+                    (color_points_by != 'same')
+                    else circle_marker_color],
                 fill_opacity = 1.0,
                 tooltip = tooltip,
                 popup = modified_fp).add_to(m)
@@ -661,7 +746,8 @@ path_color = '#3388ff', path_weight = 3, tiles = 'OpenStreetMap'):
                 tooltip = tooltip,
                 popup = modified_fp).add_to(m)
 
-            # See https://python-visualization.github.io/folium/modules.html#folium.vector_layers.path_options
+            # See https://python-visualization.github.io/folium/modules.
+            # html#folium.vector_layers.path_options
             # for different path options
             marker_count += 1
 
@@ -670,13 +756,21 @@ path_color = '#3388ff', path_weight = 3, tiles = 'OpenStreetMap'):
 
     print("Added",marker_count,"markers to the map.")
 
+    # Adding our colormap to the map:
+
+    if color_points_by == 'same': # It doesn't make sense to attempt
+        # to add a colormap in this case.
+        show_colormap = False
+    
+    if show_colormap == True:
+        m.add_child(colormap)
+    
     # Finally, the function will save the map in the location specified.
     if folder_path != None:
         m.save(f'{folder_path}/{file_name}_locations.html')
     else:
         m.save(f'{file_name}_locations.html')
     return m
-
 
 def folder_list_to_map(top_folder_list, file_name, folder_path = None):
     ''' This function calls generate_media_list, generate_loc_list,
@@ -768,19 +862,20 @@ def batch_create_map_screenshots(path_to_map_folder,
 screenshot_save_path = None, window_width = 3840,
     intl_window_width = 4200):
     '''This function
-    applies create_map_screenshot to all files within a folder. It assumes
-    that the folder contains only image files.'''
-    for root, dirs, files in os.walk(path_to_map_folder):
-        maps_list = files
-    for map in maps_list:
+    applies create_map_screenshot to all HTML files within a folder.'''
+    maps_list = os.listdir(path_to_map_folder)
+    for media_map in maps_list:
+        if media_map[-4:].lower() == 'html':
         # Setting separate widths for domestic and international maps:
         # (You may need to tweak these values depending on your own 
         # needs.)
-        if '_intl' in map:
-            window_width = intl_window_width
-        create_map_screenshot(path_to_map_folder, 
-        map_name = map, screenshot_save_path = screenshot_save_path,
-        window_width = window_width)
+            if '_intl' in media_map:
+                window_width = intl_window_width
+            create_map_screenshot(path_to_map_folder, 
+            map_name = media_map, screenshot_save_path = screenshot_save_path,
+            window_width = window_width)
+
+
 
 def convert_png_to_smaller_jpg(png_folder, png_image_name, jpg_folder, 
 reduction_factor = 1, quality_factor = 50):
